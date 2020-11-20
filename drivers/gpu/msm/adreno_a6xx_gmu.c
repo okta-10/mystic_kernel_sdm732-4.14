@@ -1,5 +1,6 @@
 /* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
  *
+ * Copyright (C) 2020 XiaoMi, Inc.
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
  * only version 2 as published by the Free Software Foundation.
@@ -348,6 +349,11 @@ static int a6xx_gmu_start(struct kgsl_device *device)
 	struct gmu_device *gmu = KGSL_GMU_DEVICE(device);
 
 	kgsl_regwrite(device, A6XX_GMU_CX_GMU_WFI_CONFIG, 0x0);
+
+	gmu_core_regwrite(device, A6XX_GMU_CM3_SYSRESET, 1);
+
+	/* Make sure M3 is in reset before going on */
+	wmb();
 
 	/* Bring GMU out of reset */
 	gmu_core_regwrite(device, A6XX_GMU_CM3_SYSRESET, 0);
@@ -838,9 +844,12 @@ static bool a6xx_gmu_gx_is_on(struct adreno_device *adreno_dev)
 static bool a6xx_gmu_cx_is_on(struct kgsl_device *device)
 {
 	unsigned int val;
+	struct gmu_device *gmu = KGSL_GMU_DEVICE(device);
 
-	if (ADRENO_QUIRK(ADRENO_DEVICE(device), ADRENO_QUIRK_CX_GDSC))
-		return regulator_is_enabled(KGSL_GMU_DEVICE(device)->cx_gdsc);
+	if (device->state != KGSL_STATE_RESET &&
+		ADRENO_QUIRK(ADRENO_DEVICE(device),
+		ADRENO_QUIRK_CX_GDSC))
+		return regulator_is_enabled(gmu->cx_gdsc);
 
 	gmu_core_regread(device, A6XX_GPU_CC_CX_GDSCR, &val);
 	return (val & BIT(31));
