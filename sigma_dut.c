@@ -836,6 +836,8 @@ static void set_defaults(struct sigma_dut *dut)
 	dut->write_stats = 1;
 	dut->priv_cmd = "iwpriv";
 	dut->sigma_tmpdir = SIGMA_TMPDIR;
+	dut->ap_ocvc = -1;
+	dut->ap_sae_commit_status = -1;
 }
 
 
@@ -855,6 +857,12 @@ static void deinit_sigma_dut(struct sigma_dut *dut)
 	dut->dpp_peer_uri = NULL;
 	free(dut->ap_sae_passwords);
 	dut->ap_sae_passwords = NULL;
+	free(dut->ap_sae_pk_modifier);
+	dut->ap_sae_pk_modifier = NULL;
+	free(dut->ap_sae_pk_keypair);
+	dut->ap_sae_pk_keypair = NULL;
+	free(dut->ap_sae_pk_keypair_sig);
+	dut->ap_sae_pk_keypair_sig = NULL;
 	free(dut->ar_ltf);
 	dut->ar_ltf = NULL;
 	free(dut->ap_dpp_conf_addr);
@@ -1247,6 +1255,13 @@ int main(int argc, char *argv[])
 
 	if (get_openwrt_driver_type() == OPENWRT_DRIVER_ATHEROS)
 		get_nl80211_config_enable_option(&sigma_dut);
+
+	sigma_dut_get_device_driver_name(get_main_ifname(&sigma_dut),
+					 sigma_dut.device_driver,
+					 sizeof(sigma_dut.device_driver));
+	if (sigma_dut.device_driver[0])
+		sigma_dut_print(&sigma_dut, DUT_MSG_DEBUG, "device driver: %s",
+				sigma_dut.device_driver);
 
 #ifdef NL80211_SUPPORT
 	sigma_dut.nl_ctx = nl80211_init(&sigma_dut);
